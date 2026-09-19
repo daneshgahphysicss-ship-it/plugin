@@ -27,6 +27,8 @@ jobs:
   quality:
     name: PHPCS + PHPStan + PHPUnit (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
