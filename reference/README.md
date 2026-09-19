@@ -1,6 +1,7 @@
-# Reference code (not part of the shipped plugin)
+# Reference code (not shipped)
 
-- `fast-woo-sale-v2.8.0/` — the second AI's plugin, extracted from `fast-woo-sale-v2.8.0.zip`
-  in `sangemashhad-sys/befrosh_fast-woocamers-sall`. Kept here in Git so it can be diffed,
-  reviewed and ported from. Review: `docs/fa/barrasi-fast-woo-sale-v2.8.md`.
-  **Do not activate together with `fast-woo-sell/`** — both use the `fws_` prefix.
+- `fast-woo-sell/` — the earlier, architecture-heavy codebase (48 files, 13 tables, tracking,
+  cosine affinity, tests/CI/PHPStan/wp-env tooling). Superseded as the product by
+  `../fast-woo-sale/` on 2026-09-19 (user decision). Kept for porting: EventType/REST tracking,
+  Cache epoch, Filters, Migrator, Capabilities, Seeder/CI tooling.
+  Review: `docs/fa/barrasi-fast-woo-sell.md`.
