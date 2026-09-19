@@ -65,9 +65,22 @@ jobs:
       - name: PHPUnit (unit)
         if: always()
         run: composer test
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: phpcs-full-php${{ matrix.php }}
-          path: fast-woo-sale/phpcs-full.txt
-          if-no-files-found: ignore
+      - name: Publish reports as commit comment (readable via API)
+        if: always() && matrix.php == '8.1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "### CI reports for ${GITHUB_SHA::7} (PHP 8.1)"
+            echo '<details><summary>PHPCS summary + source</summary>'; echo; echo '```'
+            composer lint -- --report=summary -n 2>&1 | tail -n 30 || true
+            composer lint -- --report=source -n 2>&1 | tail -n 45 || true
+            echo '```'; echo '</details>'
+            echo '<details><summary>PHPCS errors only (first 150 lines)</summary>'; echo; echo '```'
+            composer lint -- --report=full -n --severity=5 --warning-severity=0 2>&1 | head -n 150 || true
+            echo '```'; echo '</details>'
+            echo '<details><summary>PHPStan level 6</summary>'; echo; echo '```'
+            composer analyse -- --error-format=table --no-progress 2>&1 | tail -n 150 || true
+            echo '```'; echo '</details>'
+          } > report.md
+          gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/comments" -f body="$(head -c 60000 report.md)" >/dev/null
