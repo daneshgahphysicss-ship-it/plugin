@@ -1,23 +1,13 @@
-# Fast Woo Sell
+# Fast Woo Predictive Purchase (`fast-woo-sale`)
 
-Smart product recommendations for WooCommerce, based on what other customers bought
-(co-purchase affinity) and the shopper's own order history. Persian/RTL first.
+WooCommerce product recommendations from market-basket analysis of the store's own orders. Persian/RTL first, all processing local.
 
-- Plugin source: [`fast-woo-sell/`](fast-woo-sell/)
-- Project documents (Persian): [`docs/fa/`](docs/fa/) — start with
-  [`tasmimat.md`](docs/fa/tasmimat.md) (decision log) and
-  [`proposal-barname-gam-be-gam.md`](docs/fa/proposal-barname-gam-be-gam.md) (20-step plan).
+- Plugin: [`fast-woo-sale/`](fast-woo-sale/) — the product (v2.8.0 baseline, being upgraded to 3.x).
+- Plan and decisions (Persian): [`docs/fa/tasmimat.md`](docs/fa/tasmimat.md), [`docs/fa/proposal-v3-erteqa-fast-woo-sale.md`](docs/fa/proposal-v3-erteqa-fast-woo-sale.md).
+- [`reference/fast-woo-sell/`](reference/) — earlier codebase kept for porting; not shipped.
 
-## Requirements
-
-PHP 7.4+ (8.1+ recommended) · WordPress 6.2+ · WooCommerce 8.0+
-
-## Development
+Requirements: PHP 7.4+ · WordPress 6.2+ · WooCommerce 8.0+
 
 ```bash
-cd fast-woo-sell
-composer install
-composer check     # phpcs + phpunit
+cd fast-woo-sale && composer install && composer check
 ```
-
-License: GPL-2.0-or-later.
