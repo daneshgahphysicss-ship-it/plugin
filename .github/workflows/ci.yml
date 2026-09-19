@@ -41,11 +41,29 @@ jobs:
       - name: Composer install (verbose so conflicts are visible)
         run: composer install --no-interaction --no-progress --prefer-dist -vv
       - name: PHPCS (security = error, style = warning)
-        run: composer lint -- --report=summary --report-full=phpcs-full.txt || true; composer lint -- --report=summary -n
+        run: |
+          composer lint -- --report=summary --report-full=phpcs-full.txt --report-source=phpcs-source.txt || true
+          {
+            echo "## PHPCS (PHP ${{ matrix.php }})"
+            echo '```'
+            composer lint -- --report=summary -n 2>&1 | tail -n 25 || true
+            echo
+            composer lint -- --report=source -n 2>&1 | tail -n 40 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          composer lint -- --report=summary -n
       - name: PHPStan level 6 (report only in step 1)
-        run: composer analyse -- --error-format=table --no-progress || true
+        if: always()
         continue-on-error: true
+        run: |
+          {
+            echo "## PHPStan L6 (PHP ${{ matrix.php }})"
+            echo '```'
+            composer analyse -- --error-format=table --no-progress 2>&1 | tail -n 120 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: PHPUnit (unit)
+        if: always()
         run: composer test
       - uses: actions/upload-artifact@v4
         if: always()
