@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+defaults:
+  run:
+    working-directory: fast-woo-sell
+
+jobs:
+  syntax:
+    name: PHP syntax (5.6 pre-gate + 7.4)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The bootstrap + Requirements.php must parse on PHP 5.6 by contract.
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: "5.6", coverage: none }
+      - run: php -l fast-woo-sell.php && php -l includes/Core/Requirements.php && php -l uninstall.php
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: "7.4", coverage: none }
+      - run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l > /dev/null
+
+  quality:
+    name: Lint + static analysis + unit (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["7.4", "8.1", "8.3"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+      - uses: ramsey/composer-install@v3
+        with:
+          working-directory: fast-woo-sell
+      - name: PHPCS (WordPress Coding Standards)
+        run: composer lint:all
+      - name: PHPStan level 6
+        run: composer analyse
+      - name: PHPUnit (unit)
+        run: composer test
+
+  integration:
+    name: Integration (wp-env, WP latest + WooCommerce)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: "8.1", tools: composer:v2 }
+      - uses: ramsey/composer-install@v3
+        with:
+          working-directory: fast-woo-sell
+      - run: npm ci
+      - run: npx wp-env start
+      - run: npm run test:integration
+      - if: failure()
+        run: npx wp-env logs tests

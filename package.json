@@ -1,0 +1,24 @@
+{
+  "name": "fast-woo-sell-dev",
+  "private": true,
+  "description": "Development environment for the Fast Woo Sell WooCommerce plugin. Not shipped.",
+  "scripts": {
+    "env:start": "wp-env start",
+    "env:stop": "wp-env stop",
+    "env:destroy": "wp-env destroy",
+    "env:clean": "wp-env clean all",
+    "wp": "wp-env run cli wp",
+    "setup": "bash tools/wp-env/setup.sh",
+    "seed": "wp-env run cli wp fws seed --products=200 --orders=1500",
+    "seed:reset": "wp-env run cli wp fws seed --reset",
+    "affinity": "wp-env run cli wp fws affinity rebuild",
+    "composer": "wp-env run cli --env-cwd=wp-content/plugins/fast-woo-sell composer",
+    "lint": "wp-env run cli --env-cwd=wp-content/plugins/fast-woo-sell composer lint",
+    "test:unit": "wp-env run cli --env-cwd=wp-content/plugins/fast-woo-sell composer test",
+    "test:integration": "wp-env run tests-cli --env-cwd=wp-content/plugins/fast-woo-sell vendor/bin/phpunit -c phpunit-integration.xml.dist",
+    "logs": "wp-env logs"
+  },
+  "devDependencies": {
+    "@wordpress/env": "^10.0.0"
+  }
+}

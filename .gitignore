@@ -1,0 +1,30 @@
+# Dependencies
+/fast-woo-sell/vendor/
+/fast-woo-sell/node_modules/
+/node_modules/
+
+# Composer / npm lock files are committed on purpose; caches are not
+.phpunit.result.cache
+.phpcs-cache
+.phpstan-cache/
+/fast-woo-sell/build/
+
+# Test environment
+/.wp-env/
+/fast-woo-sell/tests/_output/
+/playwright-report/
+/test-results/
+
+# Built distributables
+*.zip
+/dist/
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Generated translations (.mo is built from .po in CI)
+/fast-woo-sell/languages/*.mo

@@ -1,0 +1,35 @@
+# Static analysis. Level 6 = types on every parameter/return/property must be
+# known and consistent; the sweet spot that catches real bugs in WordPress code
+# without fighting the (untyped) WordPress API itself.
+includes:
+	- vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+	level: 6
+	phpVersion: 70400
+	paths:
+		- fast-woo-sell.php
+		- uninstall.php
+		- includes
+		- tools/cli
+	scanFiles:
+		- vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
+		- vendor/php-stubs/woocommerce-stubs/woocommerce-packages-stubs.php
+		- vendor/php-stubs/wp-cli-stubs/wp-cli-stubs.php
+		- vendor/php-stubs/wp-cli-stubs/wp-cli-commands-stubs.php
+	bootstrapFiles:
+		- tests/phpstan-bootstrap.php
+	treatPhpDocTypesAsCertain: false
+	reportUnmatchedIgnoredErrors: true
+	ignoreErrors:
+		# The two pre-gate files are PHP 5.6 by contract and deliberately untyped.
+		-
+			message: '#has no return type specified#'
+			paths:
+				- fast-woo-sell.php
+				- includes/Core/Requirements.php
+		-
+			message: '#has parameter \$\w+ with no type specified#'
+			paths:
+				- fast-woo-sell.php
+				- includes/Core/Requirements.php
