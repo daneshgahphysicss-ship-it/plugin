@@ -41,6 +41,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f composer.lock
           git add -A
           git diff --cached --quiet && echo "nothing to fix" && exit 0
           git commit -m "style: apply phpcbf (WordPress coding standards, whitespace only)"
