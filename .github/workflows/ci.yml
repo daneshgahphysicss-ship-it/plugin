@@ -19,7 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
-        with: { php-version: "${{ matrix.php }}", coverage: none }
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
       - run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l > /dev/null
 
   quality:
@@ -44,8 +46,6 @@ jobs:
       - name: PHPStan level 6 (report only in step 1)
         run: composer analyse -- --error-format=table --no-progress || true
         continue-on-error: true
-      - name: PHPStan error count
-        run: composer analyse -- --error-format=json --no-progress 2>/dev/null | php -r '$j=json_decode(stream_get_contents(STDIN),true); echo "PHPStan errors: ".($j["totals"]["file_errors"]??"?")."\n";' || true
       - name: PHPUnit (unit)
         run: composer test
       - uses: actions/upload-artifact@v4
