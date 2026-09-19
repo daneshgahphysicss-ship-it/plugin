@@ -1,0 +1,39 @@
+name: phpcbf (style-only auto-fix)
+
+# Manual: applies WordPress coding-standard whitespace fixes with phpcbf and commits
+# the result back to the branch it was run on. Whitespace only - no logic changes.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  phpcbf:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fast-woo-sale
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          coverage: none
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Run phpcbf (exit 1 = fixes applied, that is fine)
+        run: composer lint:fix || true
+      - name: Verify every PHP file still parses
+        run: |
+          set -e
+          for f in $(git ls-files '*.php' | grep -v '^vendor/'); do php -l "$f" >/dev/null; done
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "nothing to fix" && exit 0
+          git commit -m "style: apply phpcbf (WordPress coding standards, whitespace only)"
+          git push origin HEAD:${{ github.ref_name }}
