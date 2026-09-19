@@ -3,7 +3,7 @@
  * Plugin Name: Fast Woo Predictive Purchase | سیستم هوشمند پیش‌بینی و پیشنهاد خرید ووکامرس
  * Plugin URI:  https://github.com/fast-woo-sale/predictive-purchase
  * Description: موتور تحلیل پیشرفته دیتابیس سفارشات ووکامرس، استخراج سبدهای پرتکرار (Market Basket Analysis)، پیش‌بینی خرید بعدی و ارائه پیشنهادات هوشمند کالا.
- * Version:     2.8.0
+ * Version:     2.8.1
  * Author:      تیم توسعه هوش تجاری ووکامرس
  * Author URI:  https://example.com
  * Text Domain: fast-woo-sale
@@ -39,7 +39,7 @@ add_action('admin_notices', function() {
 // Define Constants
 // FWS_BUNDLE_DISCOUNT و FWS_MIN_CONFIDENCE برای سازگاری قبلی حفظ شده‌اند؛
 // مقادیر واقعی از پنل تنظیمات (FWS_Settings) خوانده می‌شوند.
-define('FWS_VERSION', '2.8.0');
+define('FWS_VERSION', '2.8.1');
 define('FWS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('FWS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('FWS_MIN_CONFIDENCE', 60);
@@ -131,6 +131,10 @@ add_action('woocommerce_cart_emptied', function() {
 
 // Load Core Modules (Settings must load first — all modules depend on it)
 require_once FWS_PLUGIN_DIR . 'includes/class-fws-settings.php';
+// Keep the FWS_Settings in-request memo coherent when the option is written by any code path.
+add_action('update_option_' . FWS_Settings::OPTION_KEY, array('FWS_Settings', 'flush_memo'));
+add_action('add_option_' . FWS_Settings::OPTION_KEY, array('FWS_Settings', 'flush_memo'));
+add_action('delete_option_' . FWS_Settings::OPTION_KEY, array('FWS_Settings', 'flush_memo'));
 require_once FWS_PLUGIN_DIR . 'includes/class-fws-style-manager.php';
 require_once FWS_PLUGIN_DIR . 'includes/class-fws-database-miner.php';
 require_once FWS_PLUGIN_DIR . 'includes/class-fws-prediction-engine.php';

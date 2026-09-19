@@ -33,6 +33,10 @@ class FWS_Ajax_Handler {
         add_action('wp_ajax_fws_apply_exit_coupon', array($this, 'apply_exit_coupon'));
         add_action('wp_ajax_nopriv_fws_apply_exit_coupon', array($this, 'apply_exit_coupon'));
 
+        // BUG-10 fix (v2.8.1): nonce refresh for pages served from a full-page cache.
+        add_action('wp_ajax_fws_refresh_nonce', array($this, 'refresh_nonce'));
+        add_action('wp_ajax_nopriv_fws_refresh_nonce', array($this, 'refresh_nonce'));
+
         add_action('wp_ajax_fws_recalculate_rules', array($this, 'recalculate_rules'));
         add_action('wp_ajax_fws_optimize_database', array($this, 'optimize_database'));
     }
@@ -110,13 +114,24 @@ class FWS_Ajax_Handler {
      * بررسی سقف نرخ مجاز درخواست‌ها (Rate Limiting) جهت حفاظت در برابر ربات‌ها، حملات DoS و Cart Stuffing
      */
     private function check_rate_limit($action = 'cart_action', $limit = 30, $window = 60) {
-        $ip = $this->get_client_ip();
+        $ip  = $this->get_client_ip();
         $key = 'fws_rate_' . md5($action . '_' . $ip);
-        $attempts = (int) get_transient($key);
-        if ($attempts >= $limit) {
+
+        // BUG-13 fix (v2.8.1): the old get_transient()/set_transient() pair was a read-then-write
+        // race, so N parallel requests all saw the same counter and all passed. Use an atomic
+        // increment when a persistent object cache is present; otherwise fall back to a
+        // transient counter bucketed per window (no TTL read needed before the write).
+        $bucket_key = $key . '_' . (int) floor(time() / max(1, $window));
+        if (wp_using_ext_object_cache()) {
+            $added    = wp_cache_add($bucket_key, 1, 'fws_rate', $window);
+            $attempts = $added ? 1 : (int) wp_cache_incr($bucket_key, 1, 'fws_rate');
+        } else {
+            $attempts = (int) get_transient($bucket_key) + 1;
+            set_transient($bucket_key, $attempts, $window);
+        }
+        if ($attempts > $limit) {
             wp_send_json_error(array('message' => 'تعداد درخواست‌ها بیش از حد مجاز است. لطفاً کمی صبر کرده و سپس تلاش نمایید.'));
         }
-        set_transient($key, $attempts + 1, $window);
     }
 
     /**
@@ -202,24 +217,28 @@ class FWS_Ajax_Handler {
             $valid_ids = array_slice($valid_ids, 0, 10);
         }
 
-        // تخفیف پکیج فقط وقتی معنا دارد که حداقل ۲ کالای پکیج انتخاب شده باشد
-        $apply_discount = (count($valid_ids) >= 2);
-
         // Ensure customer session is created and persisted for guest users
         if (WC()->session && !WC()->session->has_session()) {
             WC()->session->set_customer_session_cookie(true);
         }
 
-        $added = 0;
+        // BUG-04 fix (v2.8.1): the discount must depend on what actually landed in the cart,
+        // not on how many ids were submitted (an add_to_cart() call can fail, e.g. for a
+        // variable parent or a stock race). Only successfully added ids are tracked.
+        $added_ids = array();
         foreach ($valid_ids as $pid) {
             $product = wc_get_product($pid);
             if ($product && $product->is_purchasable() && $product->is_in_stock()) {
                 $cart_item_key = WC()->cart->add_to_cart($pid, 1);
                 if ($cart_item_key) {
-                    $added++;
+                    $added_ids[] = (int) $pid;
                 }
             }
         }
+        $added = count($added_ids);
+
+        // Bundle discount only makes sense when at least 2 bundle items are really in the cart.
+        $apply_discount = ($added >= 2);
 
         if ($added === 0) {
             $notices = wc_get_notices('error');
@@ -231,7 +250,7 @@ class FWS_Ajax_Handler {
         // سشن تخفیف فقط پس از افزودن موفق و فقط برای لیست اعتبارسنجی‌شده ثبت می‌شود (رفع آلودگی سشن در مسیر خطا)
         if ($apply_discount && WC()->session) {
             $existing = (array) WC()->session->get('fws_bundle_items', array());
-            $merged   = array_unique(array_merge($existing, $valid_ids));
+            $merged   = array_unique(array_merge($existing, $added_ids));
             WC()->session->set('fws_bundle_items', $merged);
         }
 
@@ -297,6 +316,21 @@ class FWS_Ajax_Handler {
     }
 
     /**
+     * Return a fresh front-end nonce.
+     *
+     * BUG-10 fix (v2.8.1): the nonce printed into product/cart HTML is frozen by page caches
+     * (WP Rocket, LiteSpeed, CDN) and expires after 12-24h, after which every button failed with
+     * "invalid signature". The JS retries a failed request once with a nonce from this endpoint.
+     * The endpoint is intentionally nonce-free (a nonce is not a secret, it only binds a session)
+     * and is rate limited like every other public action.
+     */
+    public function refresh_nonce() {
+        $this->check_rate_limit('refresh_nonce', 20, 60);
+        nocache_headers();
+        wp_send_json_success(array('nonce' => wp_create_nonce('fws_prediction_nonce')));
+    }
+
+    /**
      * افزودن ۱ کلیکی آپسل به سفارش جاری (محافظت کامل از IDOR و جلوگیری از ثبت تکراری)
      */
     public function process_thankyou_upsell() {
@@ -324,8 +358,20 @@ class FWS_Ajax_Handler {
         }
 
         // Only allow modification for orders in modifiable status
-        if (!in_array($order->get_status(), array('pending', 'on-hold', 'processing'))) {
+        if (!in_array($order->get_status(), array('pending', 'on-hold', 'processing'), true)) {
             wp_send_json_error(array('message' => 'امکان تغییر سفارش با وضعیت فعلی آن وجود ندارد.'));
+        }
+
+        // BUG-03 fix (v2.8.1): never raise the total of an order that was already paid through an
+        // online gateway - no new payment would be collected and the order would become "half paid".
+        // Allowed: orders that still need payment (customer is redirected to the pay page below)
+        // and orders placed with offline gateways (cash on delivery, bank transfer, cheque).
+        $offline_gateways = apply_filters('fws_upsell_offline_gateways', array('cod', 'bacs', 'cheque'));
+        $is_offline       = in_array($order->get_payment_method(), (array) $offline_gateways, true);
+        if ($order->is_paid() && !$is_offline) {
+            wp_send_json_error(array(
+                'message' => 'پرداخت این سفارش انجام شده و امکان افزودن کالا به آن وجود ندارد. می‌توانید این کالا را جداگانه سفارش دهید.',
+            ));
         }
 
         // Idempotency: Prevent duplicate addition via order meta and existing order items
@@ -377,10 +423,23 @@ class FWS_Ajax_Handler {
         ));
         $order->save();
 
-        wp_send_json_success(array(
+        // BUG-02 fix (v2.8.1): WooCommerce reduces stock once, on the payment/status transition.
+        // An item appended later never triggers that hook. If stock has already been reduced for
+        // this order, reduce it for the new line too (wc_reduce_stock_levels() is idempotent per
+        // item via the _reduced_stock item meta). For unpaid orders WC will reduce it on payment.
+        if ($order->get_data_store()->get_stock_reduced($order_id)) {
+            wc_reduce_stock_levels($order);
+        }
+
+        $response = array(
             'message'   => 'کالای مکمل با موفقیت و با تخفیف ویژه به سفارش شما اضافه شد!',
             'new_total' => $order->get_formatted_order_total(),
-        ));
+        );
+        if ($order->needs_payment()) {
+            $response['pay_url'] = $order->get_checkout_payment_url();
+            $response['message'] = 'کالا به سفارش افزوده شد؛ در حال انتقال به صفحه پرداخت مبلغ جدید…';
+        }
+        wp_send_json_success($response);
     }
 
     /**

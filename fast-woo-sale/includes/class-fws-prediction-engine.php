@@ -45,6 +45,32 @@ class FWS_Prediction_Engine {
      * لایه ۱: Redis / Memcached Persistent Object Cache
      * لایه ۲: جدول Transients پایگاه‌داده
      */
+
+    /**
+     * Whether a product may be shown as a recommendation AND added to the cart with one click.
+     *
+     * BUG-05 fix (v2.8.1): variable / grouped / external products pass is_purchasable() but
+     * WC()->cart->add_to_cart( $id, 1 ) silently fails for them (no variation / no cart item /
+     * off-site). Showing them in the one-click bundle produced a dead button. Only product
+     * types that can be added directly are recommended; the list is filterable.
+     *
+     * @param WC_Product|false|null $product
+     * @return bool
+     */
+    public static function is_recommendable($product) {
+        if (!$product instanceof WC_Product) {
+            return false;
+        }
+        if (!$product->is_visible() || !$product->is_in_stock() || !$product->is_purchasable()) {
+            return false;
+        }
+        $blocked_types = apply_filters('fws_non_addable_product_types', array('variable', 'grouped', 'external'));
+        if ($product->is_type((array) $blocked_types)) {
+            return false;
+        }
+        return (bool) apply_filters('fws_is_recommendable_product', true, $product);
+    }
+
     private function get_cache($key) {
         // Tier 0: In-Memory Static Cache
         if (isset(self::$memoized_cache[$key])) {
@@ -72,11 +98,11 @@ class FWS_Prediction_Engine {
         return false;
     }
 
-    private function set_cache($key, $data) {
+    private function set_cache($key, $data, $ttl = null) {
         self::$memoized_cache[$key] = $data;
         $ver = $this->get_cache_version();
         $full_key = "fws_{$key}_v{$ver}";
-        $ttl = 24 * HOUR_IN_SECONDS;
+        $ttl = $ttl ? (int) $ttl : 24 * HOUR_IN_SECONDS;
 
         wp_cache_set($full_key, $data, FWS_Database_Miner::CACHE_GROUP, $ttl);
         set_transient($full_key, $data, $ttl);
@@ -110,7 +136,7 @@ class FWS_Prediction_Engine {
             if (!empty($blacklist) && in_array($target, $blacklist, true)) continue;
 
             $product = wc_get_product($target);
-            if ($product && $product->is_visible() && $product->is_in_stock() && $product->is_purchasable()) {
+            if (self::is_recommendable($product)) {
                 $out[] = array(
                     'product_id'    => $product->get_id(),
                     'name'          => $product->get_name(),
@@ -197,7 +223,7 @@ class FWS_Prediction_Engine {
                     if (isset($seen[$rec_pid]) || in_array($rec_pid, $blacklist, true)) continue;
 
                     $product = wc_get_product($rec_pid);
-                    if ($product && $product->is_visible() && $product->is_in_stock() && $product->is_purchasable()) {
+                    if (self::is_recommendable($product)) {
                         $seen[$rec_pid] = true;
                         $recommendations[] = array(
                             'product_id'   => $product->get_id(),
@@ -269,7 +295,7 @@ class FWS_Prediction_Engine {
             foreach ($query->posts as $fb_id) {
                 if (count($fallbacks) >= $limit) break;
                 $prod = wc_get_product($fb_id);
-                if ($prod && $prod->is_visible() && $prod->is_in_stock() && $prod->is_purchasable()) {
+                if (self::is_recommendable($prod)) {
                     $fallbacks[] = array(
                         'product_id'   => $prod->get_id(),
                         'name'         => $prod->get_name(),
@@ -293,10 +319,15 @@ class FWS_Prediction_Engine {
     /**
      * هوش مالی سبد خرید: پیدا کردن کالای پرکننده بهینه برای رسیدن به سقف ارسال رایگان
      */
-    public function get_free_shipping_fillers($cart_total, $threshold) {
+    public function get_free_shipping_fillers($cart_total, $threshold, $limit = 0) {
         if ($cart_total >= $threshold) {
             return array();
         }
+        // BUG-09 fix (v2.8.1): honour the admin "recommendations per widget" setting and the
+        // minimum confidence instead of the hard-coded 4 / LIMIT 8.
+        $limit          = $limit > 0 ? (int) $limit : max(1, min(6, (int) FWS_Settings::get('recs_limit', 3)));
+        $min_confidence = (float) FWS_Settings::get('min_confidence', 60);
+        $sql_limit      = $limit * 3;
 
         $gap = $threshold - $cart_total;
         $cart_items = WC()->cart ? WC()->cart->get_cart() : array();
@@ -320,20 +351,21 @@ class FWS_Prediction_Engine {
             FROM {$affinity_table}
             WHERE source_product_id IN ({$in_placeholders})
               AND recommended_product_id NOT IN ({$in_placeholders})
+              AND confidence_score >= %f
             GROUP BY recommended_product_id
             ORDER BY max_conf DESC
-            LIMIT 8
-        ", array_merge($cart_product_ids, $cart_product_ids)));
+            LIMIT %d
+        ", array_merge($cart_product_ids, $cart_product_ids, array($min_confidence, $sql_limit))));
 
         $fillers = array();
         if (!empty($candidates)) {
             foreach ($candidates as $cand) {
-                if (count($fillers) >= 4) break;
+                if (count($fillers) >= $limit) break;
                 $cand_pid = absint($cand->recommended_product_id);
                 if (in_array($cand_pid, $blacklist, true)) continue;
 
                 $prod = wc_get_product($cand_pid);
-                if ($prod && $prod->is_visible() && $prod->is_in_stock() && $prod->is_purchasable()) {
+                if (self::is_recommendable($prod)) {
                     $price = (float) $prod->get_price();
                     $fillers[] = array(
                         'product_id'   => $prod->get_id(),
@@ -388,7 +420,7 @@ class FWS_Prediction_Engine {
             if (in_array($candidate_pid, $blacklist, true)) continue;
 
             $product = wc_get_product($candidate_pid);
-            if (!$product || !$product->is_visible() || !$product->is_in_stock() || !$product->is_purchasable()) continue;
+            if (!self::is_recommendable($product)) continue;
 
             $regular = (float) $product->get_price();
             $discount_pct = max(0, min(90, floatval(FWS_Settings::get('upsell_discount', 20))));
@@ -412,6 +444,41 @@ class FWS_Prediction_Engine {
      * پیش‌بینی خرید بعدی کاربر لاگین‌شده بر اساس سابقه خریدهای قبلی (Personalized RFM)
      * نسخه ۲.۷: فیلتر لیست سیاه + کش نتیجه منفی (حذف کوئری‌های تکراری صفحه حساب کاربری)
      */
+    /**
+     * Invalidate the cached "next purchase" prediction of a single user.
+     *
+     * BUG-11 fix (v2.8.1): the 24h `user_rec_{id}` entry was never purged when the customer
+     * placed a new order, so the account widget kept recommending the product just bought.
+     * Hooked to woocommerce_new_order / order status transitions in FWS_Display_Hooks.
+     *
+     * @param int $user_id
+     * @return void
+     */
+    public function purge_user_prediction_cache($user_id) {
+        $user_id = absint($user_id);
+        if ($user_id <= 0) {
+            return;
+        }
+        $key      = "user_rec_{$user_id}";
+        $full_key = "fws_{$key}_v" . $this->get_cache_version();
+        unset(self::$memoized_cache[$key]);
+        wp_cache_delete($full_key, FWS_Database_Miner::CACHE_GROUP);
+        delete_transient($full_key);
+    }
+
+    /**
+     * Order hook adapter: purge the prediction cache of the order's customer.
+     *
+     * @param int $order_id
+     * @return void
+     */
+    public static function on_order_changed($order_id) {
+        $order = wc_get_order($order_id);
+        if ($order && $order->get_user_id()) {
+            self::get_instance()->purge_user_prediction_cache($order->get_user_id());
+        }
+    }
+
     public function get_user_next_purchase_prediction($user_id) {
         $user_id = absint($user_id);
         if ($user_id <= 0) return null;
@@ -474,7 +541,7 @@ class FWS_Prediction_Engine {
                 if (in_array($candidate_pid, $blacklist, true)) continue;
 
                 $product = wc_get_product($candidate_pid);
-                if ($product && $product->is_visible() && $product->is_in_stock() && $product->is_purchasable()) {
+                if (self::is_recommendable($product)) {
                     return array(
                         'product_id' => $product->get_id(),
                         'name'       => $product->get_name(),
@@ -542,7 +609,7 @@ class FWS_Prediction_Engine {
                 if (in_array($rec_pid, $blacklist, true)) continue;
 
                 $product = wc_get_product($rec_pid);
-                if ($product && $product->is_visible() && $product->is_in_stock() && $product->is_purchasable()) {
+                if (self::is_recommendable($product)) {
                     $recommendations[] = array(
                         'product_id' => $product->get_id(),
                         'name'       => $product->get_name(),
@@ -566,12 +633,11 @@ class FWS_Prediction_Engine {
         if (empty($search_query) || mb_strlen($search_query) < 2) {
             return array();
         }
-
-        $cache_key = 'search_rec_' . md5($search_query) . "_{$limit}";
-        $cached = $this->get_cache($cache_key);
-        if (false !== $cached) {
-            return $cached;
-        }
+        // BUG-06 fix (v2.8.1): the search term is attacker-controlled; never derive a persistent
+        // cache key from it (each unique term used to create two 24h transient rows in wp_options).
+        // Cap the term length, and key the cache on the *set of matched product ids* below, whose
+        // key space is bounded by the catalogue. Empty results are not persisted at all.
+        $search_query = mb_substr($search_query, 0, 60);
 
         $blacklist = $this->get_blacklist_ids();
 
@@ -590,6 +656,14 @@ class FWS_Prediction_Engine {
 
         if (empty($matching_product_ids)) {
             return array();
+        }
+
+        $matching_product_ids = array_map('intval', $matching_product_ids);
+        sort($matching_product_ids);
+        $cache_key = 'search_rec_' . md5(implode(',', $matching_product_ids)) . "_{$limit}";
+        $cached    = $this->get_cache($cache_key);
+        if (false !== $cached) {
+            return $cached;
         }
 
         $affinity_table = $wpdb->prefix . FWS_Database_Miner::TABLE_AFFINITY;
@@ -629,7 +703,7 @@ class FWS_Prediction_Engine {
 
                 $product = wc_get_product($rec_pid);
                 $source = wc_get_product($row->source_product_id);
-                if ($product && $product->is_visible() && $product->is_in_stock() && $product->is_purchasable()) {
+                if (self::is_recommendable($product)) {
                     $recommendations[] = array(
                         'product_id'    => $product->get_id(),
                         'name'          => $product->get_name(),
@@ -645,7 +719,9 @@ class FWS_Prediction_Engine {
             }
         }
 
-        $this->set_cache($cache_key, $recommendations);
+        if (!empty($recommendations)) {
+            $this->set_cache($cache_key, $recommendations, HOUR_IN_SECONDS);
+        }
         return $recommendations;
     }
 }

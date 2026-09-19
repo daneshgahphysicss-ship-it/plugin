@@ -47,6 +47,11 @@ class FWS_Display_Hooks {
         add_action('woocommerce_before_shop_loop', array($this, 'maybe_render_search_complementary_banner'), 12);
         add_filter('the_posts', array($this, 'inject_complementary_into_search_results'), 10, 2);
 
+        // BUG-11 fix (v2.8.1): a new/paid order invalidates that customer's cached prediction.
+        add_action('woocommerce_new_order', array('FWS_Prediction_Engine', 'on_order_changed'), 10, 1);
+        add_action('woocommerce_order_status_processing', array('FWS_Prediction_Engine', 'on_order_changed'), 10, 1);
+        add_action('woocommerce_order_status_completed', array('FWS_Prediction_Engine', 'on_order_changed'), 10, 1);
+
         // Shortcode support for Gutenberg, Elementor, and custom themes
         add_shortcode('fws_predicted_products', array($this, 'shortcode_handler'));
         add_shortcode('fws_bundle', array($this, 'render_bundle_shortcode'));
@@ -279,7 +284,7 @@ class FWS_Display_Hooks {
         }
 
         $engine = FWS_Prediction_Engine::get_instance();
-        $recommendations = $engine->get_cart_recommendations($cart_product_ids, 3);
+        $recommendations = $engine->get_cart_recommendations($cart_product_ids, max(1, min(6, (int) FWS_Settings::get('recs_limit', 3)))); // BUG-09 fix: was hard-coded 3
 
         if (empty($recommendations)) return;
         ?>
@@ -574,8 +579,14 @@ class FWS_Display_Hooks {
         }
 
         // فقط جستجوهای مرتبط با محصولات؛ نتایج وبلاگ/صفحات دست‌نخورده می‌مانند
-        $q_post_type = $query->get('post_type');
-        if (!empty($q_post_type) && 'product' !== $q_post_type && !(is_array($q_post_type) && in_array('product', $q_post_type, true))) {
+        // BUG-08 fix (v2.8.1): a plain WordPress search (?s=...) has an EMPTY post_type and used to
+        // pass this guard, so a product was spliced into blog/page results - contrary to the
+        // setting's description. Inject only when the query is explicitly a product search.
+        $q_post_type       = $query->get('post_type');
+        $is_product_search = ('product' === $q_post_type)
+            || (is_array($q_post_type) && in_array('product', $q_post_type, true))
+            || (function_exists('is_post_type_archive') && $query->is_post_type_archive('product'));
+        if (!$is_product_search) {
             return $posts;
         }
 

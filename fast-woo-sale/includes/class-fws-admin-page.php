@@ -403,6 +403,15 @@ class FWS_Admin_Page {
         $preset = in_array($sty['style_preset'], array(FWS_Settings::PRESET_DEFAULT, FWS_Settings::PRESET_MINIMAL, FWS_Settings::PRESET_THEME), true)
             ? $sty['style_preset'] : FWS_Settings::PRESET_DEFAULT;
         ?>
+        <?php
+        // BUG-01 fix (v2.8.1): the settings cards were never wrapped in a <form>, so the
+        // "Save settings" button did nothing. Post to options.php via the Settings API;
+        // FWS_Settings::sanitize() (registered in register_settings()) cleans the payload
+        // and preserves manual rules / blacklist that are managed over AJAX.
+        settings_errors('fws_settings_group');
+        ?>
+        <form method="post" action="<?php echo esc_url(admin_url('options.php')); ?>" id="fws-settings-form">
+        <?php settings_fields('fws_settings_group'); ?>
         <div class="card fws-admin-card" id="fws-style-card">
             <h2>🎨 ظاهر و شخصی‌سازی — هماهنگی کامل با قالب سایت</h2>
             <p class="description">همه استایل‌ها، فونت‌ها و رنگ‌های این افزونه از این بخش کنترل می‌شوند؛ می‌توانید هر ویجت را خاموش کنید، کل CSS افزونه را غیرفعال کنید یا رنگ‌ها را دقیقاً با پالت قالب خود تنظیم نمایید. هیچ استایلی اجباری نیست.</p>
@@ -753,6 +762,7 @@ class FWS_Admin_Page {
 
             <?php submit_button('ذخیره تنظیمات'); ?>
         </div>
+        </form>
         <?php
     }
 }

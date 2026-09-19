@@ -19,6 +19,29 @@
     }, 3500);
   }
 
+  /**
+   * POST helper with one automatic retry on an expired nonce (BUG-10 fix).
+   * Pages served from a full-page cache carry a stale nonce; WordPress then answers
+   * 403 / -1. We fetch a fresh nonce once and replay the request transparently.
+   */
+  function fwsPost(data, done) {
+    data.nonce = fws_params.nonce;
+    var jq = $.post(fws_params.ajax_url, data, done);
+    var deferred = $.Deferred();
+    jq.done(function(res) { deferred.resolve(res); }).fail(function(xhr) {
+      var expired = xhr && (xhr.status === 403 || xhr.status === 400 || (xhr.responseText || '').trim() === '-1');
+      if (!expired) { deferred.reject(xhr); return; }
+      $.post(fws_params.ajax_url, { action: 'fws_refresh_nonce' }).done(function(r) {
+        if (!(r && r.success && r.data && r.data.nonce)) { deferred.reject(xhr); return; }
+        fws_params.nonce = r.data.nonce;
+        data.nonce = r.data.nonce;
+        $.post(fws_params.ajax_url, data, done).done(function(res) { deferred.resolve(res); })
+          .fail(function(x) { deferred.reject(x); });
+      }).fail(function() { deferred.reject(xhr); });
+    });
+    return deferred.promise();
+  }
+
   $(document).ready(function() {
     // Checkbox toggle: recalculate bundle price dynamically (scoped to each bundle widget)
     $(document).on('change', '.fws-check-item', function() {
@@ -53,9 +76,8 @@
 
       $btn.prop('disabled', true).text('در حال افزودن به سبد...');
 
-      $.post(fws_params.ajax_url, {
+      fwsPost({
         action: 'fws_add_bundle',
-        nonce: fws_params.nonce,
         product_ids: productIds,
         main_id: $btn.data('main-id'),
         bundle_ids: $btn.data('bundle-ids'),
@@ -92,9 +114,8 @@
       var pid = $btn.data('product-id');
       $btn.prop('disabled', true).text('...');
 
-      $.post(fws_params.ajax_url, {
+      fwsPost({
         action: 'fws_add_single',
-        nonce: fws_params.nonce,
         product_id: pid
       }, function(res) {
         if (res.success) {
@@ -127,30 +148,26 @@
 
       $btn.prop('disabled', true).text('در حال ثبت به سفارش...');
 
-      $.ajax({
-        url: fws_params.ajax_url,
-        type: 'POST',
-        data: {
+      fwsPost({
           action: 'fws_thankyou_upsell',
-          nonce: fws_params.nonce,
           order_id: orderId,
           order_key: orderKey,
           product_id: pid
-        },
-        timeout: 10000,
-        success: function(res) {
+      }).done(function(res) {
           if (res.success) {
             $btn.text('🎉 با موفقیت به سفارش افزوده شد').css({'background': '#047857', 'border-color': '#047857'});
-            showToast('🎉 کالا با موفقیت به سفارش شما افزوده شد.', false);
+            showToast(res.data && res.data.message ? res.data.message : '🎉 کالا با موفقیت به سفارش شما افزوده شد.', false);
+            if (res.data && res.data.pay_url) {
+              // Order still needs payment: send the customer to pay the updated total.
+              setTimeout(function() { window.location.href = res.data.pay_url; }, 1200);
+            }
           } else {
             showToast(res.data && res.data.message ? res.data.message : 'امکان ثبت سفارش وجود ندارد.', true);
             $btn.prop('disabled', false).text('تلاش مجدد');
           }
-        },
-        error: function() {
+      }).fail(function() {
           showToast('خطای ارتباط با سرور. لطفاً صفحه را تازه‌سازی کنید.', true);
           $btn.prop('disabled', false).text('تلاش مجدد');
-        }
       });
     });
 
@@ -160,9 +177,8 @@
       var $btn = $(this);
       $btn.prop('disabled', true).text('در حال اعمال تخفیف...');
 
-      $.post(fws_params.ajax_url, {
-        action: 'fws_apply_exit_coupon',
-        nonce: fws_params.nonce
+      fwsPost({
+        action: 'fws_apply_exit_coupon'
       }, function(res) {
         if (res.success && res.data && res.data.checkout_url) {
           showToast(res.data.message || 'کد تخفیف اعمال شد.', false);

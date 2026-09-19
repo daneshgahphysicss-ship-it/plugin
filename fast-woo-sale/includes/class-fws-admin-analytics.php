@@ -239,6 +239,7 @@ class FWS_Admin_Analytics {
      */
     public static function category_color($category) {
         $palette = array('#f97316', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#eab308', '#ef4444', '#84cc16', '#a855f7');
-        return $palette[crc32((string) $category) % count($palette)];
+        // BUG-15 fix (v2.8.1): crc32() can be negative on 32-bit PHP -> negative array offset.
+        return $palette[abs(crc32((string) $category)) % count($palette)];
     }
 }

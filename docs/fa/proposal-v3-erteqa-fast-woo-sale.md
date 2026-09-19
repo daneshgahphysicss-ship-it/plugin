@@ -11,7 +11,7 @@
 - ابزار کیفیت همان پروپوزال قبل: PHPCS+WPCS، PHPStan L6، PHPUnit، wp-env، CI. **همه از `reference/fast-woo-sell` قابل کپی‌اند** (قبلاً نوشته شده).
 
 ## ۱. وضعیت مبنا (۲.۸.۰)
-۱۱ فایل PHP (~۴٬۱۰۰ خط) + ۲ JS + ۲ CSS. یک جدول `fws_product_affinity`، یک option `fws_prediction_settings`. WP-Cron روزانه (mining) و هفتگی (cleanup). ۸ سطح نمایش. امنیت AJAX خوب. صفر تست، صفر ردیابی، متن‌های هاردکد فارسی.
+۱۱ فایل PHP (~۴٬۱۰۰ خط) + ۲ JS + ۲ CSS. یک جدول `fws_product_affinity_cache`، یک option `fws_prediction_settings`. WP-Cron روزانه (mining) و هفتگی (cleanup). ۸ سطح نمایش. امنیت AJAX خوب. صفر تست، صفر ردیابی، متن‌های هاردکد فارسی.
 
 ## ۲. مراحل و گام‌ها
 
@@ -20,7 +20,7 @@
 |---|---|---|---|
 | ۱ | **بهداشت + ابزار کیفیت** | `.distignore`, `readme.txt`, `composer.json` (phpcs/phpstan/phpunit) و `phpstan.neon.dist` و CI از `reference/` کپی و برای `sale` تنظیم شود؛ header صادقانه: WP ≥ 6.2، WC ≥ 8.0 | CI اجرا می‌شود (اول قرمز؛ همین گزارش ورودی گام ۲ است) |
 | ۲ | **رفع یافته‌های PHPStan/PHPCS بدون تغییر رفتار** | فقط تایپ‌ها، escaping، prepare؛ **بدون** refactor | CI سبز روی 7.4/8.1/8.3 |
-| ۳ | **محیط اجرا + Seeder** | `.wp-env.json`, Seeder قطعی (منتقل از `reference/fast-woo-sell/tools/cli`) با آداپتور برای جدول `fws_product_affinity`: بررسی دستی `confidence(0→1) = 130/150 = 86.67%`, `lift` | `wp fws affinity check` ✓ |
+| ۳ | **محیط اجرا + Seeder** | `.wp-env.json`, Seeder قطعی (منتقل از `reference/fast-woo-sell/tools/cli`) با آداپتور برای جدول `fws_product_affinity_cache`: بررسی دستی `confidence(0→1) = 130/150 = 86.67%`, `lift` | `wp fws affinity check` ✓ |
 | ۴ | **تست‌های رگرسیون برای رفتار فعلی** | تست یکپارچه: miner روی seed؛ تخفیف باندل تراکمی نمی‌شود؛ آپسل تشکر IDOR رد می‌شود؛ HMAC باندل جعلی رد می‌شود؛ `the_posts` در غیر جست‌وجو دست نمی‌زند | ~۱۰ تست سبز؛ **قفل رفتار قبل از هر تغییر** |
 | ۵ | **رفع ۴ ایراد بحرانی بررسی** | (۱) `wc_get_product` در حلقه → یک کوئری روی `wc_product_meta_lookup` + `_prime_post_caches`؛ (۲) کش per-user برای پیش‌بینی حساب کاربری با stamp `fws_cache_version`؛ (۳) `enable_search_injection` پیش‌فرض → `no` (opt-in) + سازگاری با `is_main_query` و Elementor؛ (۴) `lift DECIMAL(5,2)` → `DECIMAL(8,2)` با migration | تست‌های گام ۴ همچنان سبز + ۴ تست جدید |
 

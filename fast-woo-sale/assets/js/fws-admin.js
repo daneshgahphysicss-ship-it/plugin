@@ -20,7 +20,8 @@
 
   function api(action, data, done) {
     var payload = $.extend({ action: action, nonce: P.nonce }, data || {});
-    $.post(P.ajax_url, payload, function (res) {
+    // BUG-14 fix (v2.8.1): return the jqXHR so callers can chain .always() (was a TypeError).
+    return $.post(P.ajax_url, payload, function (res) {
       if (res && res.success) {
         if (res.data && res.data.message) showToast(res.data.message, false);
         if (done) done(res);

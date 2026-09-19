@@ -90,9 +90,28 @@ class FWS_Settings {
     /**
      * دریافت کامل تنظیمات ذخیره‌شده merged با پیش‌فرض‌ها
      */
+    /**
+     * In-request memo of the merged settings (BUG-16 fix v2.8.1).
+     * get() is called dozens of times per render; previously each call re-read the option and
+     * re-ran wp_parse_args(). Reset whenever the option is written (persist_key() or the
+     * Settings API), see flush_memo().
+     *
+     * @var array|null
+     */
+    private static $memo = null;
+
     public static function all() {
-        $saved = self::get_saved_raw();
-        return wp_parse_args($saved, self::defaults());
+        if (null === self::$memo) {
+            self::$memo = wp_parse_args(self::get_saved_raw(), self::defaults());
+        }
+        return self::$memo;
+    }
+
+    /**
+     * Drop the in-request memo. Hooked to update_option_/add_option_/delete_option_{OPTION_KEY}.
+     */
+    public static function flush_memo() {
+        self::$memo = null;
     }
 
     /**
@@ -120,7 +139,9 @@ class FWS_Settings {
     public static function persist_key($key, $value) {
         $all          = self::get_saved_raw();
         $all[$key]    = $value;
-        return update_option(self::OPTION_KEY, $all, false);
+        $result       = update_option(self::OPTION_KEY, $all, false);
+        self::flush_memo();
+        return $result;
     }
 
     /**

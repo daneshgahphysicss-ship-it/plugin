@@ -244,6 +244,19 @@ class FWS_Database_Miner {
         }
         set_transient($lock_key, time(), 15 * MINUTE_IN_SECONDS);
 
+        // BUG-07 fix (v2.8.1): if PHP is killed mid-run (FPM/proxy timeout, fatal, OOM) the
+        // lock used to stay for 15 minutes and every retry was rejected. Release it on shutdown
+        // when we did not reach the normal end of the run; also re-enable cache addition.
+        $GLOBALS['fws_mining_finished'] = false;
+        register_shutdown_function(static function () use ($lock_key) {
+            if (empty($GLOBALS['fws_mining_finished'])) {
+                delete_transient($lock_key);
+                if (function_exists('wp_suspend_cache_addition')) {
+                    wp_suspend_cache_addition(false);
+                }
+            }
+        });
+
         // تخصیص بهینه منابع سرور در طول پردازش
         if (function_exists('wp_raise_memory_limit')) {
             wp_raise_memory_limit('admin');
@@ -464,6 +477,7 @@ class FWS_Database_Miner {
             wp_suspend_cache_addition(false);
         }
         delete_transient($lock_key);
+        $GLOBALS['fws_mining_finished'] = true;
         self::purge_cache();
         return $inserted_count;
     }
