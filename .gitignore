@@ -1,0 +1,13 @@
+/fast-woo-sale/vendor/
+/reference/fast-woo-sell/vendor/
+/node_modules/
+.phpunit.result.cache
+.phpcs-cache
+/fast-woo-sale/phpcs-full.txt
+/.wp-env/
+*.zip
+/dist/
+.idea/
+.vscode/
+.DS_Store
+composer.lock

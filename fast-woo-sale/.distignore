@@ -1,0 +1,20 @@
+# Excluded from the release zip built by `wp dist-archive`.
+.distignore
+.gitattributes
+.gitignore
+.editorconfig
+.phpunit.result.cache
+composer.json
+composer.lock
+package.json
+package-lock.json
+phpcs.xml.dist
+phpcs-legacy.xml.dist
+phpunit.xml.dist
+phpstan.neon.dist
+tests/
+vendor/
+node_modules/
+languages/README.md
+tools/
+phpunit-integration.xml.dist

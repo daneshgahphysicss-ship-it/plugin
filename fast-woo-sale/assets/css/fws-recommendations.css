@@ -1,0 +1,716 @@
+/* ============================================================
+   Fast Woo Predictive Recommendations — v2.8 "Style Freedom"
+   تمام مقادیر بصری از متغیرهای CSS خوانده می‌شوند (var(--fws-*));
+   مقادیر fallback دقیقاً برابر پیش‌فرض‌های پنل «ظاهر و شخصی‌سازی» است.
+   پیش‌تنظیم‌ها (minimal/theme) فقط مقدار همین متغیرها را بازنویسی می‌کنند.
+   هیچ font-family از افزونه تحمیل نمی‌شود (فونت همیشه از قالب ارث‌بری می‌کند).
+   ============================================================ */
+
+/* اندازه پایه تایپوگرافی ویجت‌ها — قابل تنظیم از پنل (۱۱ تا ۱۸px) */
+.fws-bundle-wrapper,
+.fws-cart-recommendations-wrapper,
+.fws-thankyou-upsell-box,
+.fws-shipping-bar-wrapper,
+.fws-modal,
+.fws-account-prediction-box,
+.fws-search-booster-banner {
+  font-size: var(--fws-font-size, 14px);
+}
+
+/* ─── باکس پکیج هوشمند صفحه محصول ─── */
+.fws-bundle-wrapper {
+  background: var(--fws-box-bg, #ffffff);
+  border: 1px solid var(--fws-box-border, #e2e8f0);
+  border-radius: var(--fws-radius, 16px);
+  padding: 24px;
+  margin: 30px 0;
+  box-shadow: var(--fws-shadow, 0 1px 3px rgba(0,0,0,0.05));
+  font-family: inherit;
+  color: var(--fws-text-main, #0f172a);
+  contain: content;
+}
+
+.fws-bundle-header {
+  margin-bottom: 20px;
+}
+
+.fws-bundle-badge {
+  display: inline-block;
+  background: var(--fws-badge-bg, #ffedd5);
+  color: var(--fws-badge-text, #f97316);
+  font-size: 0.79em;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  margin-bottom: 8px;
+}
+
+.fws-bundle-title {
+  font-size: 1.29em;
+  font-weight: 800;
+  color: var(--fws-text-main, #0f172a);
+  margin: 0 0 4px;
+}
+
+.fws-bundle-subtitle {
+  font-size: 0.93em;
+  color: var(--fws-text-muted, #64748b);
+  margin: 0;
+}
+
+.fws-bundle-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--fws-box-bg, #f8fafc);
+  border-radius: var(--fws-radius-sm, 12px);
+  border: 1px solid var(--fws-box-border, #f1f5f9);
+}
+
+.fws-bundle-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--fws-box-bg, #ffffff);
+  padding: 12px;
+  border-radius: var(--fws-radius-sm, 10px);
+  border: 1px solid var(--fws-box-border, #e2e8f0);
+  flex: 1;
+  min-width: 220px;
+}
+
+.fws-item-thumb img {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--fws-radius-sm, 8px);
+  object-fit: cover;
+}
+
+.fws-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* (رفع نقص CSS نسخه‌های قبل: نام/قیمت/برچسب آیتم‌ها هرگز استایل نداشتند) */
+.fws-item-tag {
+  font-size: 0.71em;
+  font-weight: 700;
+  color: var(--fws-badge-text, #f97316);
+  background: var(--fws-badge-bg, #ffedd5);
+  padding: 2px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.fws-item-name {
+  font-size: 0.93em;
+  font-weight: 700;
+  color: var(--fws-text-main, #0f172a);
+  line-height: 1.5;
+}
+
+.fws-item-price {
+  font-size: 0.86em;
+  font-weight: 700;
+  color: var(--fws-price-color, #059669);
+}
+
+.fws-pricing-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fws-label {
+  font-size: 0.86em;
+  color: var(--fws-text-muted, #64748b);
+}
+
+.fws-prices {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.fws-original-price {
+  color: var(--fws-text-muted, #9ca3af);
+  font-size: 0.86em;
+}
+
+.fws-discounted-price {
+  color: var(--fws-accent, #f97316);
+  font-size: 1.29em;
+  font-weight: 800;
+}
+
+.fws-confidence-tag {
+  font-size: 0.71em;
+  font-weight: 700;
+  color: var(--fws-tag-text, #15803d);
+  background: var(--fws-tag-bg, #dcfce7);
+  padding: 2px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.fws-plus-sign {
+  font-size: 1.43em;
+  font-weight: 700;
+  color: var(--fws-text-muted, #94a3b8);
+}
+
+.fws-bundle-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--fws-box-border, #f1f5f9);
+  gap: 16px;
+}
+
+.fws-add-bundle-btn {
+  background: var(--fws-accent, #f97316);
+  color: var(--fws-accent-text, #ffffff);
+  border: none;
+  padding: 12px 24px;
+  border-radius: var(--fws-radius-sm, 10px);
+  font-weight: 700;
+  font-size: 1em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.fws-add-bundle-btn:hover {
+  background: var(--fws-accent-hover, #ea580c);
+}
+
+/* ─── آپسل یک‌کلیکی صفحه تشکر ─── */
+.fws-thankyou-upsell-box {
+  background: var(--fws-grad-thankyou, linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%));
+  border: 2px dashed var(--fws-btn-success-bg, #16a34a);
+  border-radius: var(--fws-radius, 16px);
+  padding: 24px;
+  margin: 30px 0;
+  color: var(--fws-text-main, #14532d);
+}
+.fws-thankyou-badge {
+  display: inline-block;
+  background: var(--fws-btn-success-bg, #16a34a);
+  color: var(--fws-accent-text, #ffffff);
+  font-size: 0.79em;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  margin-bottom: 8px;
+}
+.fws-thankyou-title {
+  margin: 0 0 6px;
+  font-size: 1.29em;
+  font-weight: 800;
+  color: var(--fws-text-main, #14532d);
+}
+.fws-thankyou-desc {
+  color: var(--fws-text-muted, #374151);
+  font-size: 1em;
+  margin-bottom: 16px;
+}
+.fws-thankyou-item-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--fws-box-bg, #ffffff);
+  padding: 16px;
+  border-radius: var(--fws-radius-sm, 12px);
+  border: 1px solid var(--fws-box-border, #dcfce7);
+  flex-wrap: wrap;
+}
+.fws-thankyou-item-row img {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--fws-radius-sm, 8px);
+  object-fit: cover;
+}
+.fws-thankyou-pricing {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.fws-thankyou-pricing del {
+  color: var(--fws-text-muted, #9ca3af);
+  font-size: 0.93em;
+}
+.fws-thankyou-pricing strong {
+  color: var(--fws-price-color, #16a34a);
+  font-size: 1.29em;
+}
+.fws-thankyou-tag {
+  font-size: 0.79em;
+  color: var(--fws-tag-text, #15803d);
+  font-weight: 600;
+}
+.fws-thankyou-claim-btn {
+  background: var(--fws-btn-success-bg, #16a34a);
+  color: var(--fws-accent-text, #ffffff);
+  border: none;
+  padding: 12px 24px;
+  border-radius: var(--fws-radius-sm, 10px);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  font-family: inherit;
+  font-size: 1em;
+}
+.fws-thankyou-claim-btn:hover {
+  transform: scale(1.03);
+}
+
+/* ─── نوار پیشرفت ارسال رایگان ─── */
+.fws-shipping-bar-wrapper {
+  background: var(--fws-box-bg, #f8fafc);
+  border: 1px solid var(--fws-box-border, #e2e8f0);
+  border-radius: var(--fws-radius, 14px);
+  padding: 18px;
+  margin: 20px 0;
+  color: var(--fws-text-main, #1e293b);
+}
+.fws-shipping-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 1em;
+  color: var(--fws-text-main, #1e293b);
+}
+.fws-shipping-success {
+  color: var(--fws-tag-text, #15803d);
+  font-weight: 700;
+}
+.fws-shipping-percent {
+  font-weight: 800;
+  color: var(--fws-accent, #3b82f6);
+}
+.fws-progress-track {
+  background: var(--fws-box-border, #e2e8f0);
+  border-radius: 9999px;
+  height: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.fws-progress-fill {
+  background: var(--fws-progress-fill, linear-gradient(90deg, #3b82f6, #10b981));
+  height: 100%;
+  transition: width 0.4s ease;
+}
+.fws-fillers-row {
+  margin-top: 10px;
+  border-top: 1px solid var(--fws-box-border, #e2e8f0);
+  padding-top: 12px;
+}
+.fws-fillers-title {
+  font-size: 0.86em;
+  color: var(--fws-text-muted, #64748b);
+  font-weight: 700;
+  display: block;
+  margin-bottom: 10px;
+}
+.fws-fillers-list {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.fws-filler-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--fws-box-bg, #ffffff);
+  border: 1px solid var(--fws-box-border, #e2e8f0);
+  border-radius: var(--fws-radius-sm, 8px);
+  padding: 6px 12px;
+}
+.fws-filler-card img {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--fws-radius-sm, 6px);
+  object-fit: cover;
+}
+.fws-filler-name {
+  font-size: 0.86em;
+  font-weight: 600;
+  color: var(--fws-text-main, #1e293b);
+}
+.fws-filler-price {
+  font-size: 0.86em;
+  color: var(--fws-price-color, #059669);
+  font-weight: 700;
+}
+.fws-quick-add-btn {
+  background: var(--fws-box-bg, #f1f5f9);
+  border: 1px solid var(--fws-box-border, #cbd5e1);
+  color: var(--fws-text-main, #334155);
+  font-size: 0.79em;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--fws-radius-sm, 6px);
+  cursor: pointer;
+  font-family: inherit;
+}
+.fws-quick-add-btn:hover {
+  background: var(--fws-badge-bg, #e2e8f0);
+}
+
+/* ─── مودال نجات سبد خرید (Exit-Intent) ─── */
+.fws-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fws-modal-content {
+  background: var(--fws-box-bg, #ffffff);
+  border-radius: var(--fws-radius, 18px);
+  padding: 30px;
+  max-width: 480px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  color: var(--fws-text-main, #0f172a);
+}
+.fws-modal-close {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  border: none;
+  background: none;
+  font-size: 1.71em;
+  cursor: pointer;
+  color: var(--fws-text-muted, #94a3b8);
+}
+.fws-modal-badge {
+  background: var(--fws-badge-bg, #fee2e2);
+  color: var(--fws-badge-text, #b91c1c);
+  font-size: 0.79em;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+}
+.fws-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: center;
+}
+.fws-modal-confirm-btn {
+  background: var(--fws-accent, #ef4444);
+  color: var(--fws-accent-text, #ffffff);
+  padding: 12px 20px;
+  border-radius: var(--fws-radius-sm, 10px);
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1em;
+}
+.fws-modal-dismiss-btn {
+  background: var(--fws-box-bg, #f1f5f9);
+  color: var(--fws-text-muted, #64748b);
+  border: 1px solid var(--fws-box-border, transparent);
+  padding: 12px 16px;
+  border-radius: var(--fws-radius-sm, 10px);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1em;
+}
+
+/* ─── ویجت پیش‌بینی خرید بعدی (حساب کاربری) ─── */
+.fws-account-prediction-box {
+  background: var(--fws-box-bg, #ffffff);
+  border: 1px solid var(--fws-box-border, #e2e8f0);
+  border-radius: var(--fws-radius, 14px);
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: var(--fws-shadow, 0 1px 3px rgba(0,0,0,0.05));
+  color: var(--fws-text-main, #1e293b);
+}
+.fws-account-prediction-badge {
+  display: inline-block;
+  background: var(--fws-badge-bg, #eff6ff);
+  color: var(--fws-badge-text, #2563eb);
+  font-size: 0.79em;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 9999px;
+  margin-bottom: 8px;
+}
+.fws-account-title {
+  margin: 6px 0 12px;
+  font-weight: 700;
+  color: var(--fws-text-main, #1e293b);
+  font-size: 1em;
+}
+.fws-account-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  background: var(--fws-box-bg, #f8fafc);
+  border: 1px solid var(--fws-box-border, #f1f5f9);
+  border-radius: var(--fws-radius-sm, 10px);
+  flex-wrap: wrap;
+}
+.fws-account-item img {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--fws-radius-sm, 8px);
+  object-fit: cover;
+}
+.fws-account-item-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2px;
+}
+.fws-account-item-price {
+  font-weight: 700;
+  color: var(--fws-price-color, #059669);
+  font-size: 0.93em;
+}
+.fws-account-item-conf {
+  font-size: 0.79em;
+  color: var(--fws-text-muted, #64748b);
+}
+
+/* ─── بنر پیشنهاد هوشمند نتایج جستجو ─── */
+.fws-search-booster-banner {
+  background: var(--fws-grad-search, linear-gradient(135deg, #eff6ff 0%, #ffffff 100%));
+  border: 1.5px solid var(--fws-box-border, #bfdbfe);
+  border-radius: var(--fws-radius, 14px);
+  padding: 18px 20px;
+  margin: 15px 0 25px 0;
+  box-shadow: var(--fws-shadow, 0 4px 12px -2px rgba(59, 130, 246, 0.08));
+  color: var(--fws-text-main, #1e3a8a);
+}
+.fws-search-booster-header {
+  margin-bottom: 14px;
+}
+.fws-search-badge {
+  display: inline-block;
+  background: var(--fws-search-badge-bg, #2563eb);
+  color: var(--fws-accent-text, #ffffff);
+  font-size: 0.79em;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  margin-bottom: 6px;
+}
+.fws-search-title {
+  margin: 0 0 4px 0;
+  font-size: 1.07em;
+  font-weight: 800;
+  color: var(--fws-text-main, #1e3a8a);
+}
+.fws-search-subtitle {
+  margin: 0;
+  font-size: 0.86em;
+  color: var(--fws-text-muted, #475569);
+}
+.fws-search-items-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+.fws-search-item-card {
+  background: var(--fws-box-bg, #ffffff);
+  border: 1px solid var(--fws-box-border, #e2e8f0);
+  border-radius: var(--fws-radius-sm, 10px);
+  padding: 12px;
+  transition: all 0.2s ease;
+}
+.fws-search-item-card:hover {
+  border-color: var(--fws-accent, #93c5fd);
+}
+.fws-search-item-body {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.fws-search-item-thumb {
+  flex-shrink: 0;
+}
+.fws-search-item-thumb img {
+  width: 58px;
+  height: 58px;
+  border-radius: var(--fws-radius-sm, 8px);
+  object-fit: cover;
+  border: 1px solid var(--fws-box-border, #f1f5f9);
+}
+.fws-search-item-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 3px;
+}
+.fws-search-co-tag {
+  align-self: flex-start;
+  font-size: 0.71em;
+  font-weight: 700;
+  color: var(--fws-badge-text, #ea580c);
+  background: var(--fws-badge-bg, #fff7ed);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.fws-search-name {
+  font-size: 0.93em;
+  color: var(--fws-text-main, #0f172a);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fws-search-name:hover {
+  color: var(--fws-accent, #2563eb);
+}
+.fws-search-reason {
+  font-size: 0.79em;
+  color: var(--fws-text-muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fws-search-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+.fws-search-price {
+  font-weight: 800;
+  color: var(--fws-price-color, #059669);
+  font-size: 0.93em;
+}
+
+/* ─── پیشنهادات سبد خرید و شورت‌کدها ─── */
+.fws-cart-recommendations-wrapper {
+  margin: 20px 0;
+  color: var(--fws-text-main, #1e293b);
+}
+.fws-cart-title {
+  font-size: 1em;
+  font-weight: 700;
+  color: var(--fws-text-main, #1e293b);
+  margin: 0 0 12px;
+}
+.fws-cart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.fws-cart-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--fws-box-bg, #ffffff);
+  border: 1px solid var(--fws-box-border, #e2e8f0);
+  border-radius: var(--fws-radius-sm, 10px);
+  padding: 12px;
+  flex-wrap: wrap;
+}
+.fws-cart-item img {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--fws-radius-sm, 8px);
+  object-fit: cover;
+}
+.fws-cart-item-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.fws-cart-item-details strong {
+  color: var(--fws-text-main, #1e293b);
+  font-size: 0.93em;
+}
+.fws-cart-item-price {
+  color: var(--fws-price-color, #059669);
+  font-weight: 700;
+  font-size: 0.86em;
+}
+.fws-cart-confidence {
+  font-size: 0.71em;
+  color: var(--fws-tag-text, #15803d);
+  background: var(--fws-tag-bg, #dcfce7);
+  padding: 2px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+/* ─── نوتیفیکیشن غیرمسدودکننده (Toast) ─── */
+.fws-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--fws-text-main, #1e293b);
+  color: var(--fws-box-bg, #ffffff);
+  padding: 12px 20px;
+  border-radius: var(--fws-radius-sm, 10px);
+  font-size: 0.93em;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  z-index: 999999;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  font-family: inherit;
+}
+.fws-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.fws-toast.is-error {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+/* ─── برچسب‌های وضعیت (صداقت آماری + پیشنهاد مدیر) ─── */
+.fws-confidence-tag.is-fallback,
+.fws-cart-confidence.is-fallback {
+  color: var(--fws-text-muted, #475569);
+  background: var(--fws-tag-bg, #e2e8f0);
+}
+.fws-cart-confidence.is-fallback {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+/* پیشنهاد پین‌شده مدیر (قوانین دستی) */
+.fws-confidence-tag.is-manual,
+.fws-cart-confidence.is-manual {
+  color: var(--fws-badge-text, #92400e);
+  background: var(--fws-badge-bg, #fef3c7);
+  border: 1px dashed var(--fws-accent, #f59e0b);
+}
+.fws-cart-confidence.is-manual {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+}

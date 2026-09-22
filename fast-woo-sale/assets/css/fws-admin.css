@@ -1,0 +1,249 @@
+/**
+ * Fast Woo Predictive Purchase — Admin Panel Styles (v2.7)
+ */
+.fws-admin-card {
+    max-width: 960px;
+    margin-top: 20px;
+    padding: 20px;
+}
+
+/* ── لایه‌بندی ساده/تخصصی ─────────────────────────────── */
+.fws-expert-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    margin-top: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+.fws-expert-toggle-info { display: flex; flex-direction: column; gap: 4px; }
+.fws-expert-title { font-weight: 700; font-size: 13px; color: #0f172a; }
+.fws-expert-hint { font-size: 12px; color: #64748b; line-height: 1.7; }
+#fws-expert-toggle.is-open { background: #0f172a; color: #fff; border-color: #0f172a; }
+
+/* ── کارت‌های استراتژی موتور ──────────────────────────── */
+.fws-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+}
+.fws-mode-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
+}
+.fws-mode-card:hover { background: #f8fafc; }
+.fws-mode-card.is-active {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 1px #4f46e5;
+    background: #eef2ff;
+}
+.fws-mode-card input { margin-left: 6px; }
+.fws-mode-card strong { font-size: 13px; color: #0f172a; }
+.fws-mode-card small { color: #64748b; font-size: 11px; line-height: 1.7; }
+
+/* ── سازنده قانون دستی و جستجوی محصول ─────────────────── */
+.fws-rule-builder {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    padding: 14px;
+    margin-top: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+.fws-rule-builder label { display: block; font-size: 11px; color: #475569; margin-bottom: 5px; font-weight: 600; }
+
+.fws-ps { position: relative; }
+.fws-ps .fws-ps-input {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 12px;
+}
+.fws-ps-results {
+    display: none;
+    position: absolute;
+    z-index: 99;
+    top: 100%;
+    right: 0;
+    left: 0;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .12);
+}
+.fws-ps-option {
+    display: block;
+    width: 100%;
+    text-align: right;
+    padding: 8px 10px;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 12px;
+    cursor: pointer;
+}
+.fws-ps-option:hover { background: #eef2ff; }
+.fws-ps-empty { padding: 10px; font-size: 12px; color: #94a3b8; text-align: center; }
+
+.fws-rules-table { margin-top: 12px; }
+.fws-delete-rule { color: #dc2626 !important; cursor: pointer; }
+
+/* ── چیپ‌های لیست سیاه ────────────────────────────────── */
+.fws-blacklist-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fws-bl-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 999px;
+    font-size: 12px;
+    color: #991b1b;
+}
+.fws-bl-remove {
+    background: none;
+    border: 0;
+    font-size: 14px;
+    line-height: 1;
+    color: #dc2626;
+    cursor: pointer;
+    padding: 0 2px;
+}
+
+/* ── Treemap ──────────────────────────────────────────── */
+.fws-treemap {
+    position: relative;
+    width: 100%;
+    padding-bottom: 42%;
+    margin-top: 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.fws-treemap-tile {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px;
+    color: #fff;
+    border: 2px solid #fff;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: default;
+    transition: filter .12s;
+    text-align: center;
+}
+.fws-treemap-tile:hover { filter: brightness(1.12); z-index: 2; }
+.fws-tile-label { font-size: 11px; font-weight: 700; line-height: 1.5; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.fws-tile-sub { font-size: 10px; opacity: .92; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.fws-treemap-count {
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 4px 12px;
+    border-radius: 999px;
+}
+.fws-treemap-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.fws-legend-item { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #475569; }
+.fws-legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+/* ── توست ادمین ───────────────────────────────────────── */
+.fws-admin-toast {
+    position: fixed;
+    bottom: 28px;
+    left: 28px;
+    z-index: 999999;
+    padding: 10px 18px;
+    background: #065f46;
+    color: #fff;
+    font-size: 13px;
+    border-radius: 8px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity .25s, transform .25s;
+    max-width: 420px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+.fws-admin-toast.is-visible { opacity: 1; transform: translateY(0); }
+.fws-admin-toast.is-error { background: #b91c1c; }
+
+/* ───────── نسخه ۲.۸: پنل ظاهر و شخصی‌سازی ───────── */
+.fws-preset-grid {
+    margin-bottom: 8px;
+}
+.fws-color-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 10px;
+    padding: 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+.fws-color-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1e293b;
+}
+.fws-color-field input[type=color] {
+    width: 68px;
+    height: 38px;
+    padding: 2px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+}
+.fws-widget-switch input {
+    vertical-align: middle;
+}
+.fws-style-preview-wrap {
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 10px 0 20px;
+    background: repeating-conic-gradient(#f8fafc 0% 25%, #ffffff 0% 50%) 50% / 20px 20px;
+}
+#fws-style-preview-root .fws-preview-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+    display: inline-block;
+    flex-shrink: 0;
+}
+#fws-style-preview-root .fws-preview-thumb.is-alt {
+    background: linear-gradient(135deg, #fdba74, #f97316);
+}
+#fws-custom-css {
+    font-family: Consolas, Monaco, monospace;
+    direction: ltr;
+    text-align: left;
+}
