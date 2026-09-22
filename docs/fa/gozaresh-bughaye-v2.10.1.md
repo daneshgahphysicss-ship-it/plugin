@@ -546,3 +546,70 @@ SELECT COUNT(*) FROM wp_posts WHERE post_status IN ('wc-completed','wc-processin
 ۱) **B-20** (یک خط) ۲) **B-27 + B-28** (صحت داده‌های موتور — بدون این‌ها بقیه معنا ندارد) ۳) B-01 + B-07 ۴) B-02 + B-22 ۵) B-03 + B-10 + B-11 + B-23 ۶) B-29 + B-30 ۷) B-21 ۸) B-09 ۹) B-04 + B-24 ۱۰) A/B: B-05 + B-06 + B-12 + B-13 + B-32 ۱۱) B-08 ۱۲) بقیه.
 
 **جمع کل: ۳۲ باگ تأییدشده.**
+
+---
+
+# ضمیمهٔ دور چهارم بازبینی (۲۰۲۶-۰۹-۲۲) — ۲ باگ تازه (یکی بحرانی)
+
+تمرکز این دور: تعامل Settings API با مسیر AJAX پنل. یک باگ پیدا شد که احتمالاً ریشهٔ چند گزارش «قانون دستی ثبت نمی‌شود» است.
+
+| # | شدت | عنوان کوتاه | فایل |
+|---|---|---|---|
+| B-33 | **بحرانی** | افزودن/حذف قانون دستی و بلک‌لیست از پنل **هرگز ذخیره نمی‌شود**: `register_setting` فیلتر `sanitize_option_fws_prediction_settings` را ثبت می‌کند و همان `sanitize()` روی `persist_key()` هم اجرا می‌شود؛ `sanitize()` این دو کلید را از **مقدار قبلی دیتابیس** بازنویسی می‌کند، نه از ورودی | settings + admin-page |
+| B-34 | پایین | `custom_css` دو بار `wp_unslash` می‌شود (options.php یک بار، `sanitize()` بار دوم) و به‌خاطر B-33 با **هر** عملیات AJAX پنل یک لایهٔ بک‌اسلش دیگر از CSS ذخیره‌شده کم می‌شود → `content:"\201C"` به‌تدریج خراب می‌شود | settings |
+
+---
+
+## B-33 — قوانین دستی و بلک‌لیست از مسیر AJAX ذخیره نمی‌شوند
+
+**شدت:** بحرانی (کل قابلیت «قوانین دستی / Pin» و «لیست سیاه» در پنل مرده است؛ AJAX پیام موفقیت می‌دهد)
+
+**فایل‌ها:**
+- `includes/class-fws-admin-page.php` خطوط ۶۳–۷۲ (`register_setting(... 'sanitize_callback' => ['FWS_Settings','sanitize'])` روی `admin_init`)
+- `includes/class-fws-settings.php` خطوط ۱۵۱–۱۵۷ (`persist_key` → `update_option(OPTION_KEY, $all)`) و ۲۷۸–۲۸۳:
+
+```php
+$clean['manual_rules']      = isset( $saved['manual_rules'] ) ... ? self::sanitize_rules_list( $saved['manual_rules'] ) : array();
+$clean['product_blacklist'] = isset( $saved['product_blacklist'] ) ... ? self::sanitize_blacklist_ids( $saved['product_blacklist'] ) : array();
+```
+
+**زنجیرهٔ علّی (هر حلقه در هستهٔ وردپرس قابل تأیید است):**
+1. `register_setting()` در هسته `add_filter("sanitize_option_{$option}", $sanitize_callback)` را ثبت می‌کند.
+2. `update_option()` در هسته **همیشه** `sanitize_option($option, $value)` را قبل از نوشتن صدا می‌زند — فارغ از اینکه از options.php آمده یا از کد شما.
+3. `admin-ajax.php` هم `do_action('admin_init')` را اجرا می‌کند (پیش از `wp_ajax_*`)، و `FWS_Admin_Page` در `is_admin()` (که در AJAX هم `true` است) ساخته می‌شود ⇒ فیلتر در درخواست‌های AJAX پنل هم فعال است.
+4. `ajax_add_manual_rule()` → `persist_key('manual_rules', $rules)` → `update_option(..., $all)` → `FWS_Settings::sanitize($all)`.
+5. داخل `sanitize()`، `$saved = get_saved_raw()` مقدار **فعلی دیتابیس** (قبل از نوشتن) است. خطوط ۲۷۸–۲۸۳ `manual_rules`/`product_blacklist` را از `$saved` می‌گیرند و ورودی `$input['manual_rules']` (که قانون جدید را دارد) **دور ریخته می‌شود**.
+6. آرایهٔ ذخیره‌شده = همان قبلی؛ `update_option` حتی ممکن است به‌خاطر برابری مقدار `false` برگرداند. AJAX «قانون دستی … ثبت شد» می‌گوید، صفحه reload می‌شود و قانون نیست. همین برای حذف قانون، افزودن و حذف بلک‌لیست.
+
+نکتهٔ مهم: کامنت خط ۲۷۶ («هنگام ذخیره فرم باید مقادیر موجود عیناً حفظ شوند») نشان می‌دهد نویسنده فرض کرده `sanitize()` فقط از options.php صدا می‌شود؛ این فرض غلط است.
+
+**چرا مهاجرت `tracking_retention_days` (خط ۱۹۷ tracker) از این بلا در امان است:** روی `init` اجرا می‌شود که **قبل از** `admin_init` است، پس فیلتر هنوز ثبت نشده. (و در فرانت هیچ‌وقت ثبت نمی‌شود.)
+
+**بازتولید:** پنل → قوانین دستی → دو محصول انتخاب → «افزودن قانون» → پیام موفقیت → پس از reload جدول خالی است. `SELECT option_value FROM wp_options WHERE option_name='fws_prediction_settings'` هم `manual_rules` خالی نشان می‌دهد.
+
+**پیشنهاد اصلاح (یکی از سه):**
+- **ساده‌ترین:** در `sanitize()` اگر `isset($input['manual_rules'])` بود از ورودی بخوانید (`sanitize_rules_list($input['manual_rules'])`) و فقط در نبودِ کلید به `$saved` برگردید. همین برای `product_blacklist`. (فرم options.php این کلیدها را نمی‌فرستد، پس رفتار «حفظ» برقرار می‌ماند.)
+- در `persist_key()` فیلتر را موقتاً بردارید: `remove_filter('sanitize_option_'.OPTION_KEY, [__CLASS__,'sanitize'])` → `update_option` → `add_filter` دوباره.
+- قوانین/بلک‌لیست را به آپشن مستقل منتقل کنید (توصیهٔ B-29 هم همین بود).
+
+> ⚠️ این باگ در نسخهٔ ۲.۸.۱ فورک ما (`/home/user/plugin/fast-woo-sale`) هم عیناً وجود دارد؛ در گام بعدی خودمان باید اصلاح شود.
+
+---
+
+## B-34 — بک‌اسلش‌های CSS سفارشی به‌تدریج پاک می‌شوند
+
+**شدت:** پایین
+
+**فایل:** `includes/class-fws-settings.php` خط ۲۵۶
+
+**علت:** `wp-admin/options.php` قبل از `update_option` خودش `wp_unslash()` می‌کند؛ `sanitize()` دوباره `wp_unslash($input['custom_css'])` می‌زند ⇒ یک لایهٔ بک‌اسلش اضافه حذف می‌شود (`content:"\201C"` → `content:"201C"`؛ `\A`/`\f`‑escapeها و مسیرهای فونت با بک‌اسلش خراب می‌شوند). به‌علاوه به‌خاطر B-33 هر عملیات AJAX پنل (افزودن قانون/بلک‌لیست) دوباره `sanitize()` را روی مقدار ذخیره‌شده اجرا می‌کند و **هر بار** یک لایهٔ دیگر می‌کند؛ CSS مدیر با گذر زمان تخریب تجمعی می‌شود.
+
+**پیشنهاد اصلاح:** `wp_unslash` را از `sanitize()` بردارید (هسته قبلاً انجام داده) و اصلاح B-33 را اعمال کنید تا `sanitize()` روی داده‌های DB اجرا نشود.
+
+---
+
+## ترتیب اصلاح به‌روزشده (پس از چهار دور)
+
+۱) **B-33** (بحرانی، چند خط) ۲) B-20 ۳) B-27 + B-28 ۴) B-01 + B-07 ۵) B-02 + B-22 ۶) B-03 + B-10 + B-11 + B-23 ۷) B-29 + B-30 + B-34 ۸) B-21 ۹) B-09 ۱۰) B-04 + B-24 ۱۱) A/B: B-05 + B-06 + B-12 + B-13 + B-32 ۱۲) B-08 ۱۳) بقیه.
+
+**جمع کل: ۳۴ باگ تأییدشده.**
